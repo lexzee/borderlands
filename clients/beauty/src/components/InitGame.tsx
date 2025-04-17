@@ -2,7 +2,7 @@ import { useState } from "react";
 import { init_game } from "../utils/actions";
 
 function InitGame() {
-  const [no_players, setNoPlayers] = useState(0);
+  const [no_players, setNoPlayers] = useState(1);
 
   async function createGame(e: any) {
     e.preventDefault();

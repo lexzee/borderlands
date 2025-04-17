@@ -1,18 +1,24 @@
 import { useState } from "react";
-import { player_ready } from "../utils/actions";
+import { round_entry } from "../utils/actions";
 
-function Ready() {
+function RoundEntry() {
   const [gameID, setGameID] = useState(1);
   const [playerID, setPlayerID] = useState(1);
-  async function playerReady(e: any, game_id: number, player_id: number) {
+  const [entry, setEntry] = useState(1);
+  async function playerRoundEntry(
+    e: any,
+    game_id: number,
+    player_id: number,
+    entry: number
+  ) {
     e.preventDefault();
-    const res = await player_ready(game_id, player_id);
+    const res = await round_entry(game_id, player_id, entry);
 
     console.log(res);
   }
   return (
     <>
-      <div>Ready</div>
+      <div>RoundEntry</div>
       <form>
         <label>
           Game ID:{" "}
@@ -30,13 +36,23 @@ function Ready() {
             onChange={(e: any) => setPlayerID(e.target.value)}
           />
         </label>
+        <label>
+          Entry:{" "}
+          <input
+            type="number"
+            value={entry}
+            onChange={(e: any) => setEntry(e.target.value)}
+          />
+        </label>
 
-        <button onClick={(e: any) => playerReady(e, gameID, playerID)}>
-          Join
+        <button
+          onClick={(e: any) => playerRoundEntry(e, gameID, playerID, entry)}
+        >
+          Submit
         </button>
       </form>
     </>
   );
 }
 
-export default Ready;
+export default RoundEntry;

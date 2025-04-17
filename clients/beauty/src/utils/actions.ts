@@ -75,4 +75,43 @@ async function player_ready(game_id: number, player_id: number) {
   }
 }
 
-export { init_game, player_connect, player_ready };
+// Check Ready
+async function check_ready(game_id: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/check_ready`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Round Entry
+async function round_entry(game_id: number, player_id: number, entry: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/rounds/${player_id}`, {
+      method: "POST",
+      body: encode({ entry: entry }),
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+export { init_game, player_connect, player_ready, check_ready, round_entry };
