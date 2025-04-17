@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { init_game } from "../utils/actions";
 
 function InitGame() {

@@ -23,7 +23,8 @@ async function init_game(num_players: number) {
     });
 
     if (!res.ok) {
-      throw new Error("Error creating game!");
+      let msg = await res.json();
+      throw new Error(msg["error"]);
     }
 
     return res.json();
@@ -42,7 +43,8 @@ async function player_connect(game_id: number) {
     });
 
     if (!res.ok) {
-      throw new Error("Error creating game!");
+      let msg = await res.json();
+      throw new Error(msg["error"]);
     }
 
     return res.json();
@@ -51,4 +53,26 @@ async function player_connect(game_id: number) {
   }
 }
 
-export { init_game };
+// Player Ready
+async function player_ready(game_id: number, player_id: number) {
+  try {
+    const res = await fetch(
+      `${host}/games/${game_id}/players/${player_id}/ready`,
+      {
+        method: "PUT",
+        headers,
+      }
+    );
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+export { init_game, player_connect, player_ready };
