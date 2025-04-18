@@ -114,4 +114,30 @@ async function round_entry(game_id: number, player_id: number, entry: number) {
   }
 }
 
-export { init_game, player_connect, player_ready, check_ready, round_entry };
+// Process Round
+async function process_round(game_id: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/process_round`, {
+      method: "POST",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+export {
+  init_game,
+  player_connect,
+  player_ready,
+  check_ready,
+  round_entry,
+  process_round,
+};
