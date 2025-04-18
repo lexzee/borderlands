@@ -23,7 +23,8 @@ async function init_game(num_players: number) {
     });
 
     if (!res.ok) {
-      throw new Error("Error creating game!");
+      let msg = await res.json();
+      throw new Error(msg["error"]);
     }
 
     return res.json();
@@ -42,7 +43,8 @@ async function player_connect(game_id: number) {
     });
 
     if (!res.ok) {
-      throw new Error("Error creating game!");
+      let msg = await res.json();
+      throw new Error(msg["error"]);
     }
 
     return res.json();
@@ -51,4 +53,190 @@ async function player_connect(game_id: number) {
   }
 }
 
-export { init_game };
+// Player Ready
+async function player_ready(game_id: number, player_id: number) {
+  try {
+    const res = await fetch(
+      `${host}/games/${game_id}/players/${player_id}/ready`,
+      {
+        method: "PUT",
+        headers,
+      }
+    );
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Check Ready
+async function check_ready(game_id: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/check_ready`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Round Entry
+async function round_entry(game_id: number, player_id: number, entry: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/rounds/${player_id}`, {
+      method: "POST",
+      body: encode({ entry: entry }),
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Process Round
+async function process_round(game_id: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/process_round`, {
+      method: "POST",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Check disqualification
+async function disqualify(game_id: number) {
+  try {
+    const res = await fetch(`${host}/disqualify/${game_id}`, {
+      method: "PUT",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Check gameover
+async function check_gameover(game_id: number) {
+  try {
+    const res = await fetch(`${host}/check_gameover/${game_id}`, {
+      method: "PUT",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Misc
+// Show games
+async function games() {
+  try {
+    const res = await fetch(`${host}/games`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+// Show players
+async function get_players(game_id: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/get_players`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+// Show round Entries
+async function get_round(game_id: number) {
+  try {
+    const res = await fetch(`${host}/get_round/${game_id}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+export {
+  init_game,
+  player_connect,
+  player_ready,
+  check_ready,
+  round_entry,
+  process_round,
+  disqualify,
+  check_gameover,
+  games,
+  get_players,
+  get_round,
+};

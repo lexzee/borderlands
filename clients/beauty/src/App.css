@@ -4,3 +4,10 @@
   padding: 2rem;
   text-align: center;
 }
+
+form {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2em;
+  gap: 0.5rem;
+}
