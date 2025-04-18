@@ -1,4 +1,6 @@
 import "./App.css";
+import CheckDisqualify from "./components/CheckDisqualify";
+import CheckGameOver from "./components/CheckGameOver";
 import CheckReady from "./components/CheckReady";
 import InitGame from "./components/InitGame";
 import JoinGame from "./components/joinGame";
@@ -18,6 +20,8 @@ function App() {
         <CheckReady />
         <RoundEntry />
         <ProcessRound />
+        <CheckDisqualify />
+        <CheckGameOver />
       </div>
     </>
   );

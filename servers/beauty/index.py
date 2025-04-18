@@ -120,7 +120,7 @@ def process_round(game_id):
   entryData = r_data[game_id]["entries"]
 
   # Check if entries is equal to the number of players
-  if len(entryData) < int(game["num_players"]):
+  if len(entryData) < len(game["players"]):
     return jsonify({"error":"Not all players have submitted an entry"})
 
   # # Calculate drop and assign winner
@@ -151,27 +151,32 @@ def process_round(game_id):
 
 # CHeck for disqualification
 # @PUT "/disqualify"
-@app.route('/disqualify', methods = ['PUT'])
-def disqualify():
-  global players,lock
-  with lock:
-    disqualified_players = []
-    remaining_players = []
-    for i, player in enumerate(players):
-      if player["score"] == -3:
-        disqualified_players.append(player['id'])
-        del players[i]
-      else:
-        remaining_players.append(player)
-    return jsonify({"message": f"{len(disqualified_players)} Players have been disqualified"})
+@app.route('/disqualify/<int:game_id>', methods = ['PUT'])
+def disqualify(game_id):
+  if game_id not in games:
+    return jsonify({"error": "Game not found!"}), 404
+  game = games[game_id]
+
+  disqualified_players = []
+  remaining_players = []
+  for i, player in enumerate(game["players"]):
+    if player["score"] == -1:
+      disqualified_players.append(player['id'])
+      del game["players"][i]
+    else:
+      remaining_players.append(player)
+  return jsonify({"message": f"{len(disqualified_players)} Players have been disqualified", "players": disqualified_players})
 
 
 # Check gameover
 # @PUT "/check_gameover"
-@app.route('/check_gameover', methods = ['PUT'])
-def check_game_over():
-  global game_over, players
-  non_disqualified = sum(1 for player in players if player['score'] >= -3)
+@app.route('/check_gameover/<int:game_id>', methods = ['PUT'])
+def check_gameover(game_id):
+  if game_id not in games:
+    return jsonify({"error": "Game not found!"}), 404
+  game = games[game_id]
+
+  non_disqualified = sum(1 for player in game["players"] if player['score'] >= -1)
   game_over = non_disqualified == 1
   return jsonify({"Game over": game_over})
 
@@ -188,16 +193,18 @@ def get_games():
 def get_players(game_id):
   # global players, lock
   if game_id not in games:
-    return jsonify({"error": "game not found"}), 404
-  # with lock:
-  return jsonify(players)
+    return jsonify({"error": "Game not found!"}), 404
+  game = games[game_id]
+  return jsonify(game["players"])
 
 # Show round entry
-# @GET "/get_round"
-@app.route('/get_round')
-def get_round():
+# @GET "/get_round/<int:game_id>"
+@app.route('/get_round/<int:game_id>')
+def get_round(game_id):
   global r_data
-  return jsonify(r_data)
+  if game_id not in r_data:
+    return jsonify({"error": "Game data not found!"}), 404
+  return jsonify(r_data[game_id])
 
 # Start flask server
 if __name__ == "__main__":

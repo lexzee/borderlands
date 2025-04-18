@@ -133,6 +133,100 @@ async function process_round(game_id: number) {
   }
 }
 
+// Check disqualification
+async function disqualify(game_id: number) {
+  try {
+    const res = await fetch(`${host}/disqualify/${game_id}`, {
+      method: "PUT",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Check gameover
+async function check_gameover(game_id: number) {
+  try {
+    const res = await fetch(`${host}/check_gameover/${game_id}`, {
+      method: "PUT",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Misc
+// Show games
+async function games() {
+  try {
+    const res = await fetch(`${host}/games`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+// Show players
+async function get_players(game_id: number) {
+  try {
+    const res = await fetch(`${host}/games/${game_id}/get_players`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+// Show round Entries
+async function get_round(game_id: number) {
+  try {
+    const res = await fetch(`${host}/get_round/${game_id}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
 export {
   init_game,
   player_connect,
@@ -140,4 +234,6 @@ export {
   check_ready,
   round_entry,
   process_round,
+  disqualify,
+  check_gameover,
 };
