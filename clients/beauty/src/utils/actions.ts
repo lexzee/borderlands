@@ -236,4 +236,7 @@ export {
   process_round,
   disqualify,
   check_gameover,
+  games,
+  get_players,
+  get_round,
 };
