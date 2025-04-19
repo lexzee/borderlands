@@ -2,10 +2,10 @@ import { useState } from "react";
 import { check_ready } from "@/utils/actions";
 
 function CheckReady() {
-  const [gameID, setGameID] = useState(1);
-  async function checkReady(e: any, game_id: number) {
+  const [gameCode, setGameCode] = useState<string>("");
+  async function checkReady(e: any, game_code: string) {
     e.preventDefault();
-    const res = await check_ready(game_id);
+    const res = await check_ready(game_code);
 
     console.log(res);
   }
@@ -16,13 +16,15 @@ function CheckReady() {
         <label>
           Game ID:{" "}
           <input
-            type="number"
-            value={gameID}
-            onChange={(e: any) => setGameID(e.target.value)}
+            type="string"
+            value={gameCode}
+            onChange={(e: any) => setGameCode(e.target.value)}
           />
         </label>
 
-        <button onClick={(e: any) => checkReady(e, gameID)}>Check Ready</button>
+        <button onClick={(e: any) => checkReady(e, gameCode)}>
+          Check Ready
+        </button>
       </form>
     </>
   );
