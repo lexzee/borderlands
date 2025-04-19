@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { disqualify } from "../utils/actions";
+import { disqualify } from "@/utils/actions";
 
 function CheckDisqualify() {
   const [gameID, setGameID] = useState(1);

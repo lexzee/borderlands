@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { player_ready } from "../utils/actions";
+import { player_ready } from "@/utils/actions";
 
 function Ready() {
   const [gameID, setGameID] = useState(1);

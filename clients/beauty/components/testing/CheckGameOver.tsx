@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { check_gameover } from "../utils/actions";
+import { check_gameover } from "@/utils/actions";
 
 function CheckGameOver() {
   const [gameID, setGameID] = useState(1);

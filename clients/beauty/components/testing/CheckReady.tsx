@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { player_connect } from "../utils/actions";
+import { check_ready } from "@/utils/actions";
 
-function JoinGame() {
+function CheckReady() {
   const [gameID, setGameID] = useState(1);
-  async function playerJoin(e: any, game_id: number) {
+  async function checkReady(e: any, game_id: number) {
     e.preventDefault();
-    const res = await player_connect(game_id);
+    const res = await check_ready(game_id);
 
     console.log(res);
   }
   return (
     <>
-      <div>JoinGame</div>
+      <div>CheckReady</div>
       <form>
         <label>
           Game ID:{" "}
@@ -22,10 +22,10 @@ function JoinGame() {
           />
         </label>
 
-        <button onClick={(e: any) => playerJoin(e, gameID)}>Join</button>
+        <button onClick={(e: any) => checkReady(e, gameID)}>Check Ready</button>
       </form>
     </>
   );
 }
 
-export default JoinGame;
+export default CheckReady;

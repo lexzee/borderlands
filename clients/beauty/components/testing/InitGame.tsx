@@ -1,5 +1,5 @@
+import { init_game } from "@/utils/actions";
 import { useState } from "react";
-import { init_game } from "../utils/actions";
 
 function InitGame() {
   const [no_players, setNoPlayers] = useState(1);
