@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { process_round } from "../utils/actions";
+import { process_round } from "@/utils/actions";
 
 function ProcessRound() {
   const [gameID, setGameID] = useState(1);

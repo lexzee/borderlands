@@ -6,6 +6,9 @@ from models import db, Game, Player, RoundData, RoundResult
 app = Flask(__name__)
 CORS(app)
 
+# Mongo URI
+uri = "mongodb+srv://developerlexzee:borderlands@borderland.axll9jm.mongodb.net/?retryWrites=true&w=majority&appName=borderland"
+
 # dbMODel
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///game.db' #Replace with db url
 app.config['SQLALCHEMY_DATABASE_TRACK_MODIFICATIONS'] = False

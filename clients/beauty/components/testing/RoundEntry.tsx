@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { round_entry } from "../utils/actions";
+import { round_entry } from "@/utils/actions";
 
 function RoundEntry() {
   const [gameID, setGameID] = useState(1);
