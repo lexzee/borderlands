@@ -52,6 +52,9 @@ def init_game():
   if not data or "num_players" not in data:
     return jsonify({"error": "Number of players is required"}), 400
 
+  if int(data["num_players"]) < 1:
+    return jsonify({"error": "Number of players should be more than 1"}), 400
+
   while True:
     try:
       game_code = generate_short_code()
@@ -72,7 +75,8 @@ def init_game():
 
   return jsonify({
     "game_code": game_code,
-    "message": f"Game initialized for {data['num_players']} players"
+    "message": f"Game initialized for {data['num_players']} players",
+    "game": game
   }), 201
 
 
@@ -272,6 +276,25 @@ def process_round(game_code, round_number):
   }), 200
 
 
+# Show players in a game
+# @GET "/games/<string:game_code>/get_players"
+@app.route('/games/<string:game_code>/get_players')
+def get_players(game_code):
+
+  game = mongo.db.games.find_one({"game_code": game_code})
+  if not game:
+    return jsonify({"error": "Game not found!"}), 404
+
+  players = game["players"]
+  return jsonify(players)
+
+
+# Start flask server
+if __name__ == "__main__":
+ app.run(debug=True, host="0.0.0.0") ## flask --app index run --debug --host=0.0.0.0
+
+
+
 # CHeck for disqualification
 # @PUT "/disqualify"
 # @app.route('/disqualify/<string:game_code>', methods = ['PUT'])
@@ -343,20 +366,3 @@ def process_round(game_code, round_number):
 #       result.append({"game_code": round.game_code,  "player_id": round.player_id, "entry": round.entry})
 
 #   return jsonify(result)
-
-# Show players in a game
-# @GET "/games/<string:game_code>/get_players"
-@app.route('/games/<string:game_code>/get_players')
-def get_players(game_code):
-
-  game = mongo.db.games.find_one({"game_code": game_code})
-  if not game:
-    return jsonify({"error": "Game not found!"}), 404
-
-  players = game["players"]
-  return jsonify(players)
-
-
-# Start flask server
-if __name__ == "__main__":
-  app.run(debug=True, host="0.0.0.0") ## flask --app index run --debug --host=0.0.0.0

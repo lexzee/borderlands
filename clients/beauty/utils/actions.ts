@@ -1,4 +1,5 @@
-const host: string = "http://127.0.0.1:5000";
+// const host: string = "http://127.0.0.1:5000";
+const host: string = "http://192.168.173.148:5000";
 
 function encode(data: {}) {
   let string = JSON.stringify(data);
