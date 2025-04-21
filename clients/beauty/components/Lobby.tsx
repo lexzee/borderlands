@@ -1,13 +1,24 @@
-import { use, useState } from "react";
+import io from "socket.io-client";
+import { use, useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { PopUPWithConfirmation, Toast } from "./ui/popup";
 import { Input } from "./ui/input";
-import { init_game, player_connect } from "@/utils/actions";
+import {
+  check_ready,
+  get_game,
+  init_game,
+  player_connect,
+  player_ready,
+  start_game,
+} from "@/utils/actions";
+import { useGame } from "@/context/GameContext";
+import { useRouter } from "next/navigation";
 
-// }
+const socket = io("http://127.0.0.1:5000");
+
 interface Player {
-  player_id: number;
+  player_id_in_game: number;
   name: string;
   status: string;
   score: number;
@@ -17,36 +28,30 @@ interface Game {
   game_code: string;
   num_players: number;
   status: string;
-  players: Player;
+  players: Player[];
   round_data: [];
 }
 
-interface Gamex {
-  num_players: number;
-}
-
 const LobbyScreen: React.FC = () => {
-  const [player, setPlayer] = useState<Player>({
-    player_id: 5,
-    name: "Alice",
-    status: "joined",
-    score: 0,
-  });
-  const [isHost, setIsHost] = useState(false);
-  const [inGame, setInGame] = useState(false);
+  const {
+    game,
+    player,
+    gameCode,
+    isHost,
+    inGame,
+    setGame,
+    setPlayer,
+    setGameCode,
+    setIsHost,
+    setInGame,
+  } = useGame();
 
-  // HandlePopUps and states
+  const router = useRouter();
+
+  // popups
   const [showCreatePopUp, setShowCreatePopUp] = useState<boolean>(false);
   const [showJoinPopUp, setShowJoinPopUp] = useState<boolean>(false);
   const [numPlayers, setNumPlayers] = useState<number>(0);
-  const [gameCode, setGameCode] = useState<string>("");
-  const [game, setGame] = useState<Game>({
-    game_code: "htGs34",
-    num_players: 5,
-    status: "string",
-    players: player,
-    round_data: [],
-  });
   const [playerName, setPlayerName] = useState<string>("");
 
   // for toast
@@ -65,59 +70,153 @@ const LobbyScreen: React.FC = () => {
     if (gameCode != "") {
       const res = await player_connect(code, name);
 
-      try {
+      if (!res.error) {
         setPlayer(res);
+        console.log(res);
+
         setInGame(true);
         displayToast(`You joined game (${code}) as ${name.toWellFormed()}`);
-      } catch (error) {
-        console.log("Error: " + error);
-        displayToast(res.message);
-      } finally {
-        // displayToast(res.message);
-      }
+        socket.emit("join_room", code);
 
-      console.log(res);
+        await getGames(code);
+        return true;
+      } else {
+        displayToast(`${res.error}`);
+        return false;
+      }
     }
   };
 
   const handleCreateGame = async () => {
     setIsHost(true);
-    setInGame(true);
     // Logic coming in
     const res = await init_game(numPlayers);
 
-    try {
+    if (!res.error) {
       setGameCode(res.game_code);
       setGame(res.game);
-      joinGame(res.game_code, playerName);
-    } catch (error) {
-      console.log("Error: " + error);
-    } finally {
       displayToast(res.message);
+      setShowCreatePopUp(!showCreatePopUp);
+    } else {
+      displayToast(res.error);
     }
 
-    setShowCreatePopUp(!showCreatePopUp);
+    const stat = await joinGame(gameCode, playerName);
+    if (stat) {
+      console.log("Join succesful");
+    } else {
+      console.log("Falied to complete");
+    }
   };
 
-  const handleJoinGame = (e: any) => {
-    setIsHost(false);
-    setInGame(true);
+  const handleJoinGame = async (e: any) => {
+    // setIsHost(false);
     // Logic coming in
-    joinGame(gameCode, playerName);
+    await joinGame(gameCode, playerName);
 
     setShowJoinPopUp(!showJoinPopUp);
   };
 
-  const handleReadyToggle = () => {
-    setPlayer({
-      ...player,
-      status: "ready",
-    });
+  const handleReady = async () => {
+    await ready(gameCode, player.player_id_in_game);
   };
 
-  const handleStartGame = () => {};
+  const handleStartGame = async () => {
+    const res = await check_ready(game.game_code);
+    if (!res.error) {
+      if (res.message === "True") {
+        await start(game.game_code);
+        console.log("game Started");
+        // router.push("/game");
+      } else {
+        console.log("Not all players are ready!");
+      }
+    }
+  };
 
-  // if (!inGame) {
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Connected to server");
+      displayToast("Conected to server");
+    });
+  }, []);
+
+  const getGames = async (code: string) => {
+    const res = await get_game(code);
+
+    if (!res.error) {
+      setGame(res);
+      res.players.map((p: Player) =>
+        p.player_id_in_game === player.player_id_in_game ? setPlayer(p) : null
+      );
+    } else {
+      displayToast(res.error);
+    }
+  };
+
+  const ready = async (code: string, player_id: number) => {
+    const res = await player_ready(code, player_id);
+
+    if (!res.error) {
+      // setGame(res);
+      await getGames(code);
+    } else {
+      displayToast(res.error);
+    }
+  };
+
+  const start = async (code: string) => {
+    const res = await start_game(code);
+    if (!res.error) {
+      setGame(res);
+    }
+  };
+
+  useEffect(() => {
+    if (gameCode == "") return;
+    const handlePlayerJoined = async (data: any) => {
+      displayToast(`Player ${data.name} joined the game!`);
+
+      await getGames(gameCode);
+    };
+
+    const handlePlayerReady = async (data: any) => {
+      displayToast(`Player ${data.name} is ready!`);
+      data.player_id_in_game === player.player_id_in_game
+        ? setPlayer(data)
+        : null;
+
+      await getGames(gameCode);
+    };
+
+    const handleGameStart = async (data: any) => {
+      displayToast(`${data}`);
+
+      await getGames(gameCode);
+    };
+
+    const storedGame = localStorage.getItem("gameCode");
+    const handleConnect = () => {
+      if (storedGame) {
+        socket.emit("join_room", storedGame);
+        console.log(`Rejoined room: ${storedGame}`);
+        displayToast(`Rejoined room: ${storedGame}`);
+      }
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("player_joined", handlePlayerJoined);
+    socket.on("player_ready", handlePlayerReady);
+    socket.on("game_started", handleGameStart);
+
+    return () => {
+      socket.off("player_joined", handlePlayerJoined);
+      socket.off("player_ready", handlePlayerReady);
+      socket.off("game_started", handleGameStart);
+      socket.on("connect", handleConnect);
+    };
+  }, [gameCode]);
+
   if (!inGame) {
     return (
       <>
@@ -194,8 +293,34 @@ const LobbyScreen: React.FC = () => {
       </>
     );
   }
+
+  const displayStartButton = () => {
+    if (player.status == "joined") {
+      return (
+        <Button className="bg-green-700" onClick={handleReady}>
+          Ready
+        </Button>
+      );
+    } else if (player.status == "ready") {
+      if (isHost) {
+        return (
+          <Button className="bg-blue-800" onClick={handleStartGame}>
+            Start Game
+          </Button>
+        );
+      }
+
+      // if (game.num_players === game.players.length) {
+      //   return (
+      //     <p className="font-thin text-sm">Waiting for host to start...</p>
+      //   );
+      // }
+      return <p className="font-thin text-sm">Waiting for other players...</p>;
+    }
+  };
   return (
     <>
+      {showToast && <Toast>{toastMsg}</Toast>}
       <div className="min-h-screen bg-gray-900 flex flex-col items-center px-4 py-6 justify-between">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 space-y-4">
@@ -204,55 +329,43 @@ const LobbyScreen: React.FC = () => {
               <p>
                 Game code:{" "}
                 <span className="font-bold">
-                  {game["game_code"].toUpperCase()}
+                  {/* {game["game_code"].toUpperCase()} */}
+                  {gameCode.toUpperCase()}
                 </span>
               </p>
               <p className="text-[12px]">
                 You {isHost ? "are hosting" : "joined"} the game
               </p>
               <p className="text-[12px] font-light">
-                Players Joined: 1 / {game["num_players"]}
+                Players Joined: {game.players.length} / {game["num_players"]}
               </p>
             </div>
           </CardContent>
           <CardContent className="p-6 space-y-2">
             <h2 className="text-xl font-medium">Players</h2>
             <div className="w-full border-amber-50">
-              <div className="flex justify-between text-[13px]">
-                <p>You</p>
-                {player.status == "joined" ? (
-                  <p className="text-orange-400">Not Ready</p>
-                ) : (
-                  <p className="text-green-500">Ready</p>
-                )}
-              </div>
-
-              <div className="flex justify-between text-[13px]">
-                <p>You</p>
-                {player.status == "joined" ? (
-                  <p className="text-orange-400">Not Ready</p>
-                ) : (
-                  <p className="text-green-500">Ready</p>
-                )}
-              </div>
+              {game.players.map((p) => (
+                <div
+                  className="flex justify-between text-[13px]"
+                  key={p.player_id_in_game}
+                >
+                  <p>
+                    {p.player_id_in_game === player.player_id_in_game
+                      ? "You"
+                      : p.name}
+                  </p>
+                  {p.status == "joined" ? (
+                    <p className="text-orange-400">Not Ready</p>
+                  ) : (
+                    <p className="text-green-500">Ready</p>
+                  )}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {player.status == "joined" && (
-          <Button className="bg-green-700" onClick={handleReadyToggle}>
-            Ready
-          </Button>
-        )}
-
-        {isHost && player.status == "ready" && (
-          <Button className="bg-blue-800" onClick={handleStartGame}>
-            Start Game
-          </Button>
-        )}
-        {!isHost && player.status == "ready" && (
-          <p className="font-thin text-sm">Waiting for other players...</p>
-        )}
+        {displayStartButton()}
       </div>
     </>
   );

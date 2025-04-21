@@ -2,6 +2,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
+from flask_socketio import SocketIO, emit, join_room
 from bson.objectid import ObjectId
 from datetime import date
 import string, random
@@ -13,6 +14,7 @@ def generate_short_code(length=6):
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 # Mongo URI
@@ -94,32 +96,46 @@ def player_connect(game_code):
   if not game:
     return jsonify({"error": "Game not found!"}), 404
 
-  if len(game['players']) >= int(game['num_players']):
+  players = game.get("players", [])
+
+  if len(players) >= int(game['num_players']):
     return jsonify({"error": "maximum num of players reached"}), 400
 
   player_id = len(game.get("players", [])) + 1
-  player = {
+  new_player = {
       "player_id_in_game": player_id,
       "name": player_name,
       "status": "joined",
       "score": 0
   }
 
+
+  players.append(new_player)
   mongo.db.games.update_one(
     {"_id": game['_id']},
-    {"$push": {"players": player}}
+    {"$push": {"players": new_player}}
   )
 
-  return jsonify({
-    "player_id": player_id,
+  msg = {
+    "player_id_in_game": player_id,
     "name": player_name,
-    "status": player["status"],
-    "score": player["score"]
+    "status": new_player["status"],
+    "score": new_player["score"],
+    "game_code": game_code
+  }
+  socketio.emit("player_joined", msg, room = game_code.lower())
+
+  return jsonify({
+    "player_id_in_game": player_id,
+    "name": player_name,
+    "status": new_player["status"],
+    "score": new_player["score"],
+    "game_code": game_code
   }), 201
 
 
 # Player ready status
-# @POST "/games/<string:game_code>/players/<int:player_id>/ready"
+# @PUT "/games/<string:game_code>/players/<int:player_id>/ready"
 @app.route('/games/<string:game_code>/players/<int:player_id>/ready', methods = ['PUT'])
 def player_ready(game_code, player_id):
   game = mongo.db.games.find_one({'game_code': game_code.lower()})
@@ -128,11 +144,16 @@ def player_ready(game_code, player_id):
 
   players = game.get('players', [])
   player_found = False
+  currentPlayer = {}
+
+  print(players)
+  print([type(p) for p in players])
 
   for player in players:
     if player["player_id_in_game"] == player_id:
       player["status"] = "ready"
       player_found = True
+      currentPlayer = player
       break
 
   if not player_found:
@@ -143,7 +164,34 @@ def player_ready(game_code, player_id):
     {'$set': {'players': players}}
   )
 
-  return jsonify({"message": f"Player {player_id} is ready" }), 200
+  msg = {
+    "player_id_in_game": player_id,
+    "name": currentPlayer["name"],
+    "status": currentPlayer["status"],
+    "score": currentPlayer["score"],
+    "game_code": game_code
+  }
+
+  socketio.emit("player_ready", msg, room = game_code.lower())
+
+  return jsonify(currentPlayer), 200
+
+# Start Game
+# @PUT "/start_game/<string:game_code>"
+@app.route('/start_game/<string:game_code>', methods = ["PUT"])
+def start_game(game_code):
+  game = mongo.db.games.find_one({'game_code': game_code.lower()})
+  if not game:
+      return jsonify({"error": "Game not found!"}), 404
+
+  mongo.db.games.update_one(
+     {"game_code": game_code.lower()},
+     {'$set': {'status': "started"}}
+  )
+
+  socketio.emit("game_started", "Game has started", room = game_code.lower())
+
+  return jsonify(game), 200
 
 
 # Check if all players are ready
@@ -161,7 +209,7 @@ def check_ready(game_code):
 
   all_ready = all(player['status'] == 'ready' for player in players)
 
-  return jsonify({"message": f"All ready: {all_ready}"}), 200
+  return jsonify({"message": f"{all_ready}"}), 200
 
 
 # Round Entry
@@ -289,9 +337,32 @@ def get_players(game_code):
   return jsonify(players)
 
 
+# Get game
+# @GET "/get_game/<string:game_code>"
+@app.route('/get_game/<string:game_code>', methods = ["GET", "OPTIONS"])
+def get_game(game_code):
+  if request.method == "OPTIONS":
+    return ""
+
+  game = mongo.db.games.find_one({"game_code": game_code})
+  if not game:
+    return jsonify({"error": "Game not found!"}), 404
+
+  return jsonify(game)
+
+
+
+#Listener for room
+@socketio.on('join_room')
+def handle_join_room(data):
+    room = data
+    join_room(room)
+    print(f"A client joined room: {room}")
+
+
 # Start flask server
 if __name__ == "__main__":
- app.run(debug=True, host="0.0.0.0") ## flask --app index run --debug --host=0.0.0.0
+ socketio.run(app, debug=True, host="0.0.0.0") ## flask --app index run --debug --host=0.0.0.0
 
 
 

@@ -1,3 +1,5 @@
+import { error } from "console";
+
 // const host: string = "http://127.0.0.1:5000";
 const host: string = "http://192.168.173.148:5000";
 
@@ -17,12 +19,11 @@ async function init_game(num_players: number) {
       method: "POST",
       body: encode({ num_players: num_players }),
       headers,
-      // mode: "no-cors",
     });
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -38,12 +39,11 @@ async function player_connect(game_code: string, name: string) {
       method: "POST",
       headers,
       body: encode({ name: name }),
-      // mode: "no-cors",
     });
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -65,7 +65,7 @@ async function player_ready(game_code: string, player_id: number) {
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -84,7 +84,26 @@ async function check_ready(game_code: string) {
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Start Game
+async function start_game(game_code: string) {
+  try {
+    const res = await fetch(`${host}/start_game/${game_code}`, {
+      method: "PUT",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      return { error: msg.error };
     }
 
     return res.json();
@@ -234,6 +253,26 @@ async function get_round(game_code: string) {
   }
 }
 
+// GEt game
+async function get_game(game_code: string) {
+  try {
+    const res = await fetch(`${host}/get_game/${game_code}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      // throw new Error(msg["error"]);
+      return { error: msg.error };
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
 export {
   init_game,
   player_connect,
@@ -246,4 +285,6 @@ export {
   games,
   get_players,
   get_round,
+  get_game,
+  start_game,
 };
