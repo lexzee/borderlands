@@ -2,10 +2,15 @@ import { useState } from "react";
 import { process_round } from "@/utils/actions";
 
 function ProcessRound() {
-  const [gameID, setGameID] = useState(1);
-  async function playerProcessRound(e: any, game_id: number) {
+  const [gameCode, setGameCode] = useState("");
+  const [round, setRound] = useState(1);
+  async function playerProcessRound(
+    e: any,
+    game_code: string,
+    round_number: number
+  ) {
     e.preventDefault();
-    const res = await process_round(game_id);
+    const res = await process_round(game_code, round_number);
 
     console.log(res);
   }
@@ -16,13 +21,21 @@ function ProcessRound() {
         <label>
           Game ID:{" "}
           <input
-            type="number"
-            value={gameID}
-            onChange={(e: any) => setGameID(e.target.value)}
+            type="text"
+            value={gameCode}
+            onChange={(e: any) => setGameCode(e.target.value)}
+          />
+        </label>
+        <label>
+          Round:{" "}
+          <input
+            type="text"
+            value={round}
+            onChange={(e: any) => setRound(e.target.value)}
           />
         </label>
 
-        <button onClick={(e: any) => playerProcessRound(e, gameID)}>
+        <button onClick={(e: any) => playerProcessRound(e, gameCode, round)}>
           Submit
         </button>
       </form>

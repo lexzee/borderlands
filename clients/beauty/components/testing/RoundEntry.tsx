@@ -2,17 +2,18 @@ import { useState } from "react";
 import { round_entry } from "@/utils/actions";
 
 function RoundEntry() {
-  const [gameID, setGameID] = useState(1);
-  const [playerID, setPlayerID] = useState(1);
-  const [entry, setEntry] = useState(1);
+  const [gameCode, setGameCode] = useState("");
+  const [playerID, setPlayerID] = useState<number>(1);
+  const [entry, setEntry] = useState<number>(1);
+  const [round, setRound] = useState<number>(1);
   async function playerRoundEntry(
     e: any,
-    game_id: number,
+    game_code: string,
     player_id: number,
     entry: number
   ) {
     e.preventDefault();
-    const res = await round_entry(game_id, player_id, entry);
+    const res = await round_entry(game_code, player_id, entry, round);
 
     console.log(res);
   }
@@ -23,9 +24,9 @@ function RoundEntry() {
         <label>
           Game ID:{" "}
           <input
-            type="number"
-            value={gameID}
-            onChange={(e: any) => setGameID(e.target.value)}
+            type="string"
+            value={gameCode}
+            onChange={(e: any) => setGameCode(e.target.value)}
           />
         </label>
         <label>
@@ -44,9 +45,17 @@ function RoundEntry() {
             onChange={(e: any) => setEntry(e.target.value)}
           />
         </label>
+        <label>
+          Round:{" "}
+          <input
+            type="number"
+            value={round}
+            onChange={(e: any) => setRound(e.target.value)}
+          />
+        </label>
 
         <button
-          onClick={(e: any) => playerRoundEntry(e, gameID, playerID, entry)}
+          onClick={(e: any) => playerRoundEntry(e, gameCode, playerID, entry)}
         >
           Submit
         </button>

@@ -5,6 +5,8 @@ import Ready from "./testing/Ready";
 import CheckReady from "./testing/CheckReady";
 import CheckDisqualify from "./testing/CheckDisqualify";
 import CheckGameOver from "./testing/CheckGameOver";
+import RoundEntry from "./testing/RoundEntry";
+import ProcessRound from "./testing/ProcessRound";
 
 const TestInterface = () => {
   return (
@@ -14,6 +16,8 @@ const TestInterface = () => {
       <JoinGame />
       <Ready />
       <CheckReady />
+      <RoundEntry />
+      <ProcessRound />
       <CheckDisqualify />
       <CheckGameOver />
     </div>

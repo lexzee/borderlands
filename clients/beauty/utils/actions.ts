@@ -1,4 +1,7 @@
-const host: string = "http://127.0.0.1:5000";
+import { error } from "console";
+
+// const host: string = "http://127.0.0.1:5000";
+const host: string = "http://192.168.173.148:5000";
 
 function encode(data: {}) {
   let string = JSON.stringify(data);
@@ -6,10 +9,7 @@ function encode(data: {}) {
 }
 
 const headers = {
-  "Content-type": "application/json; charset=UTF-8",
-  // LK_PHN_MODEL: phoneModel,
-  // LK_APP_VERSION: "4.2.0",
-  // 'LK_OS_VERSION': 12,
+  "Content-type": "application/json",
 };
 
 // Create Game
@@ -19,12 +19,11 @@ async function init_game(num_players: number) {
       method: "POST",
       body: encode({ num_players: num_players }),
       headers,
-      // mode: "no-cors",
     });
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -34,17 +33,17 @@ async function init_game(num_players: number) {
 }
 
 // Join game
-async function player_connect(game_id: number) {
+async function player_connect(game_code: string, name: string) {
   try {
-    const res = await fetch(`${host}/games/${game_id}/players`, {
+    const res = await fetch(`${host}/games/${game_code}/players`, {
       method: "POST",
       headers,
-      // mode: "no-cors",
+      body: encode({ name: name }),
     });
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -54,10 +53,10 @@ async function player_connect(game_id: number) {
 }
 
 // Player Ready
-async function player_ready(game_id: number, player_id: number) {
+async function player_ready(game_code: string, player_id: number) {
   try {
     const res = await fetch(
-      `${host}/games/${game_id}/players/${player_id}/ready`,
+      `${host}/games/${game_code}/players/${player_id}/ready`,
       {
         method: "PUT",
         headers,
@@ -66,7 +65,7 @@ async function player_ready(game_id: number, player_id: number) {
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -76,16 +75,35 @@ async function player_ready(game_id: number, player_id: number) {
 }
 
 // Check Ready
-async function check_ready(game_id: number) {
+async function check_ready(game_code: string) {
   try {
-    const res = await fetch(`${host}/games/${game_id}/check_ready`, {
+    const res = await fetch(`${host}/games/${game_code}/check_ready`, {
       method: "GET",
       headers,
     });
 
     if (!res.ok) {
       let msg = await res.json();
-      throw new Error(msg["error"]);
+      return { error: msg.error };
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// Start Game
+async function start_game(game_code: string) {
+  try {
+    const res = await fetch(`${host}/start_game/${game_code}`, {
+      method: "PUT",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      return { error: msg.error };
     }
 
     return res.json();
@@ -95,11 +113,16 @@ async function check_ready(game_id: number) {
 }
 
 // Round Entry
-async function round_entry(game_id: number, player_id: number, entry: number) {
+async function round_entry(
+  game_code: string,
+  player_id: number,
+  entry: number,
+  round_number: number
+) {
   try {
-    const res = await fetch(`${host}/games/${game_id}/rounds/${player_id}`, {
+    const res = await fetch(`${host}/games/${game_code}/rounds/${player_id}`, {
       method: "POST",
-      body: encode({ entry: entry }),
+      body: encode({ entry: entry, round_number: round_number }),
       headers,
     });
 
@@ -115,12 +138,15 @@ async function round_entry(game_id: number, player_id: number, entry: number) {
 }
 
 // Process Round
-async function process_round(game_id: number) {
+async function process_round(game_code: string, round_number: number) {
   try {
-    const res = await fetch(`${host}/games/${game_id}/process_round`, {
-      method: "POST",
-      headers,
-    });
+    const res = await fetch(
+      `${host}/games/${game_code}/rounds/${round_number}/process_round`,
+      {
+        method: "POST",
+        headers,
+      }
+    );
 
     if (!res.ok) {
       let msg = await res.json();
@@ -134,9 +160,9 @@ async function process_round(game_id: number) {
 }
 
 // Check disqualification
-async function disqualify(game_id: number) {
+async function disqualify(game_code: string) {
   try {
-    const res = await fetch(`${host}/disqualify/${game_id}`, {
+    const res = await fetch(`${host}/disqualify/${game_code}`, {
       method: "PUT",
       headers,
     });
@@ -153,9 +179,9 @@ async function disqualify(game_id: number) {
 }
 
 // Check gameover
-async function check_gameover(game_id: number) {
+async function check_gameover(game_code: string) {
   try {
-    const res = await fetch(`${host}/check_gameover/${game_id}`, {
+    const res = await fetch(`${host}/check_gameover/${game_code}`, {
       method: "PUT",
       headers,
     });
@@ -191,9 +217,9 @@ async function games() {
   }
 }
 // Show players
-async function get_players(game_id: number) {
+async function get_players(game_code: string) {
   try {
-    const res = await fetch(`${host}/games/${game_id}/get_players`, {
+    const res = await fetch(`${host}/games/${game_code}/get_players`, {
       method: "GET",
       headers,
     });
@@ -209,9 +235,9 @@ async function get_players(game_id: number) {
   }
 }
 // Show round Entries
-async function get_round(game_id: number) {
+async function get_round(game_code: string) {
   try {
-    const res = await fetch(`${host}/get_round/${game_id}`, {
+    const res = await fetch(`${host}/get_round/${game_code}`, {
       method: "GET",
       headers,
     });
@@ -219,6 +245,26 @@ async function get_round(game_id: number) {
     if (!res.ok) {
       let msg = await res.json();
       throw new Error(msg["error"]);
+    }
+
+    return res.json();
+  } catch (error) {
+    return error;
+  }
+}
+
+// GEt game
+async function get_game(game_code: string) {
+  try {
+    const res = await fetch(`${host}/get_game/${game_code}`, {
+      method: "GET",
+      headers,
+    });
+
+    if (!res.ok) {
+      let msg = await res.json();
+      // throw new Error(msg["error"]);
+      return { error: msg.error };
     }
 
     return res.json();
@@ -239,4 +285,6 @@ export {
   games,
   get_players,
   get_round,
+  get_game,
+  start_game,
 };

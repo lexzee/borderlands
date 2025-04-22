@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { GameProvider } from "@/context/GameContext";
+import "../globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Beauty",
-  description: "Based on Borderlands's King of Diamonds",
+  title: "Beauty | Game",
+  description: "Gameplay Screen",
 };
 
 export default function RootLayout({
@@ -28,7 +27,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GameProvider>{children}</GameProvider>
+        {children}
       </body>
     </html>
   );
