@@ -6,6 +6,10 @@ from flask_socketio import SocketIO, emit, join_room
 # from bson.objectid import ObjectId
 # from datetime import date
 import string, random
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def generate_short_code(length=6):
@@ -18,12 +22,11 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 # Mongo URI
-uri = "mongodb+srv://developerlexzee:borderlands@borderland.axll9jm.mongodb.net/beauty?retryWrites=true&w=majority&appName=borderland"
-test_uri = "mongodb://localhost:27017/game_db"
+mongo_uri = os.getenv("MONGO_URI")
 
 #####################################
 # Mongo DB
-app.config["MONGO_URI"] = uri
+app.config["MONGO_URI"] = mongo_uri
 mongo = PyMongo(app)
 mongo.db.games.create_index("game_code", unique = True)
 #####################################
