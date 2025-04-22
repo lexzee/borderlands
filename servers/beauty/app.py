@@ -3,8 +3,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 from flask_socketio import SocketIO, emit, join_room
-from bson.objectid import ObjectId
-from datetime import date
+# from bson.objectid import ObjectId
+# from datetime import date
 import string, random
 
 
@@ -362,7 +362,7 @@ def handle_join_room(data):
 
 # Start flask server
 if __name__ == "__main__":
- socketio.run(app, debug=True, host="0.0.0.0") ## flask --app index run --debug --host=0.0.0.0
+ socketio.run(app) ## flask --app index run --debug --host=0.0.0.0
 
 
 
