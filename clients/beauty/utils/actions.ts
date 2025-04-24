@@ -1,7 +1,13 @@
-import { error } from "console";
+import { Game, Player } from "@/context/GameContext";
 
 // const host: string = "http://127.0.0.1:5000";
-const host: string = "http://192.168.173.148:5000";
+const host: string | undefined = process.env.NEXT_PUBLIC_HOST;
+
+interface InitGameResponse {
+  game_code: string;
+  game: Game;
+  message: string;
+}
 
 function encode(data: {}) {
   let string = JSON.stringify(data);
@@ -12,85 +18,73 @@ const headers = {
   "Content-type": "application/json",
 };
 
-// Create Game
-async function init_game(num_players: number) {
+// API Wrapper
+async function apiRequest<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T | { error: string }> {
   try {
-    const res = await fetch(`${host}/init_game`, {
-      method: "POST",
-      body: encode({ num_players: num_players }),
-      headers,
-    });
-
+    const res = await fetch(url, options);
     if (!res.ok) {
-      let msg = await res.json();
-      return { error: msg.error };
+      const errorData = await res.json();
+      return { error: errorData.error || "An unexpected error occured." };
     }
-
-    return res.json();
-  } catch (error) {
-    return error;
+    return await res.json();
+  } catch (error: any) {
+    console.error("API Error: ", error);
+    return { error: error.message || "Network error" };
   }
+}
+
+// Create Game
+async function init_game(
+  num_players: number,
+  player_name: string
+): Promise<InitGameResponse | { error: string }> {
+  return apiRequest<InitGameResponse>(`${host}/init_game`, {
+    method: "POST",
+    body: encode({ num_players, player_name }),
+    headers,
+  });
 }
 
 // Join game
-async function player_connect(game_code: string, name: string) {
-  try {
-    const res = await fetch(`${host}/games/${game_code}/players`, {
-      method: "POST",
-      headers,
-      body: encode({ name: name }),
-    });
-
-    if (!res.ok) {
-      let msg = await res.json();
-      return { error: msg.error };
-    }
-
-    return res.json();
-  } catch (error) {
-    return error;
-  }
+async function player_connect(
+  game_code: string,
+  name: string
+): Promise<Player | { error: string }> {
+  return apiRequest<Player>(`${host}/games/${game_code}/players`, {
+    method: "POST",
+    headers,
+    body: encode({ name: name }),
+  });
 }
 
 // Player Ready
-async function player_ready(game_code: string, player_id: number) {
-  try {
-    const res = await fetch(
-      `${host}/games/${game_code}/players/${player_id}/ready`,
-      {
-        method: "PUT",
-        headers,
-      }
-    );
-
-    if (!res.ok) {
-      let msg = await res.json();
-      return { error: msg.error };
+async function player_ready(
+  game_code: string,
+  player_id: number
+): Promise<Player | { error: string }> {
+  return apiRequest<Player>(
+    `${host}/games/${game_code}/players/${player_id}/ready`,
+    {
+      method: "PUT",
+      headers,
     }
-
-    return res.json();
-  } catch (error) {
-    return error;
-  }
+  );
 }
 
 // Check Ready
-async function check_ready(game_code: string) {
-  try {
-    const res = await fetch(`${host}/games/${game_code}/check_ready`, {
+async function check_ready(
+  game_code: string
+): Promise<{ message: string } | { error: string }> {
+  return apiRequest<{ message: string }>(
+    `${host}/games/${game_code}/check_ready`,
+    {
       method: "GET",
       headers,
-    });
-
-    if (!res.ok) {
-      let msg = await res.json();
-      return { error: msg.error };
     }
-
-    return res.json();
-  } catch (error) {
-    return error;
-  }
+  );
 }
 
 // Start Game

@@ -12,6 +12,7 @@ export interface Player {
   name: string;
   status: string;
   score: number;
+  // game_code: string;
 }
 
 export interface Game {
@@ -50,6 +51,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     name: "",
     status: "",
     score: 0,
+    // game_code: "",
   });
   const [gameCode, setGameCode] = useState<string>("");
   const [isHost, setIsHost] = useState<boolean>(false);

@@ -15,7 +15,8 @@ import {
 import { useGame } from "@/context/GameContext";
 import { useRouter } from "next/navigation";
 
-const socket = io("http://127.0.0.1:5000");
+const host = process.env.NEXT_PUBLIC_HOST;
+const socket = io(host);
 
 interface Player {
   player_id_in_game: number;
@@ -66,100 +67,73 @@ const LobbyScreen: React.FC = () => {
     }, 1500);
   };
 
-  const joinGame = async (code: string, name: string) => {
+  const handleCreateGame = async () => {
+    setIsHost(true);
+
+    const res = await init_game(numPlayers, playerName);
+
+    if (!("error" in res)) {
+      setGameCode(res.game_code);
+      setGame(res.game);
+      setPlayer(res.game.players[0]);
+      displayToast(res.message);
+      setShowCreatePopUp(!showCreatePopUp);
+      setInGame(true);
+      socket.emit("join_room", res.game_code);
+    } else {
+      displayToast(res.error);
+    }
+  };
+
+  const handleJoinGame = async (e: any) => {
     if (gameCode != "") {
-      const res = await player_connect(code, name);
+      const res = await player_connect(gameCode, playerName);
 
-      if (!res.error) {
+      if (!("error" in res)) {
         setPlayer(res);
-        console.log(res);
-
         setInGame(true);
-        displayToast(`You joined game (${code}) as ${name.toWellFormed()}`);
-        socket.emit("join_room", code);
+        displayToast(
+          `You joined game (${gameCode}) as ${playerName.toWellFormed()}`
+        );
+        socket.emit("join_room", gameCode);
 
-        await getGames(code);
+        await getGames(gameCode);
+        setShowJoinPopUp(!showJoinPopUp);
         return true;
       } else {
-        displayToast(`${res.error}`);
+        displayToast(res.error);
         return false;
       }
     }
   };
 
-  const handleCreateGame = async () => {
-    setIsHost(true);
-    // Logic coming in
-    const res = await init_game(numPlayers);
-
-    if (!res.error) {
-      setGameCode(res.game_code);
-      setGame(res.game);
-      displayToast(res.message);
-      setShowCreatePopUp(!showCreatePopUp);
-    } else {
-      displayToast(res.error);
-    }
-
-    const stat = await joinGame(gameCode, playerName);
-    if (stat) {
-      console.log("Join succesful");
-    } else {
-      console.log("Falied to complete");
-    }
-  };
-
-  const handleJoinGame = async (e: any) => {
-    // setIsHost(false);
-    // Logic coming in
-    await joinGame(gameCode, playerName);
-
-    setShowJoinPopUp(!showJoinPopUp);
-  };
-
   const handleReady = async () => {
-    await ready(gameCode, player.player_id_in_game);
+    const res = await player_ready(gameCode, player.player_id_in_game);
+
+    !("error" in res) ? await getGames(gameCode) : displayToast(res.error);
   };
 
   const handleStartGame = async () => {
     const res = await check_ready(game.game_code);
-    if (!res.error) {
-      if (res.message === "True") {
+    if (!("error" in res)) {
+      if (res["message"] === "True") {
         await start(game.game_code);
-        console.log("game Started");
-        // router.push("/game");
+        displayToast("Game Started");
+        router.push("/game");
       } else {
-        console.log("Not all players are ready!");
+        displayToast("Not all players are ready!");
       }
     }
   };
 
-  useEffect(() => {
-    socket.on("connect", () => {
-      console.log("Connected to server");
-      displayToast("Conected to server");
-    });
-  }, []);
-
   const getGames = async (code: string) => {
     const res = await get_game(code);
 
-    if (!res.error) {
+    if (!("error" in res)) {
       setGame(res);
       res.players.map((p: Player) =>
         p.player_id_in_game === player.player_id_in_game ? setPlayer(p) : null
       );
-    } else {
-      displayToast(res.error);
-    }
-  };
-
-  const ready = async (code: string, player_id: number) => {
-    const res = await player_ready(code, player_id);
-
-    if (!res.error) {
-      // setGame(res);
-      await getGames(code);
     } else {
       displayToast(res.error);
     }
@@ -173,7 +147,14 @@ const LobbyScreen: React.FC = () => {
   };
 
   useEffect(() => {
+    socket.on("connect", () => {
+      displayToast("Conected to server");
+    });
+  }, []);
+
+  useEffect(() => {
     if (gameCode == "") return;
+
     const handlePlayerJoined = async (data: any) => {
       displayToast(`Player ${data.name} joined the game!`);
 
@@ -182,24 +163,20 @@ const LobbyScreen: React.FC = () => {
 
     const handlePlayerReady = async (data: any) => {
       displayToast(`Player ${data.name} is ready!`);
-      data.player_id_in_game === player.player_id_in_game
-        ? setPlayer(data)
-        : null;
+      data.player_id_in_game === player.player_id_in_game && setPlayer(data);
 
       await getGames(gameCode);
     };
 
     const handleGameStart = async (data: any) => {
       displayToast(`${data}`);
-
       await getGames(gameCode);
     };
 
-    const storedGame = localStorage.getItem("gameCode");
     const handleConnect = () => {
+      const storedGame = localStorage.getItem("gameCode");
       if (storedGame) {
         socket.emit("join_room", storedGame);
-        console.log(`Rejoined room: ${storedGame}`);
         displayToast(`Rejoined room: ${storedGame}`);
       }
     };
@@ -208,21 +185,21 @@ const LobbyScreen: React.FC = () => {
     socket.on("player_joined", handlePlayerJoined);
     socket.on("player_ready", handlePlayerReady);
     socket.on("game_started", handleGameStart);
+    socket.emit("join_room", gameCode);
 
     return () => {
       socket.off("player_joined", handlePlayerJoined);
       socket.off("player_ready", handlePlayerReady);
       socket.off("game_started", handleGameStart);
-      socket.on("connect", handleConnect);
+      socket.off("connect", handleConnect);
     };
-  }, [gameCode]);
+  }, [gameCode, player]);
 
   if (!inGame) {
     return (
       <>
         {showToast && <Toast>{toastMsg}</Toast>}
         <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4 py-6">
-          {/* // <div className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start"> */}
           {showCreatePopUp && (
             <PopUPWithConfirmation
               className=""
@@ -310,11 +287,6 @@ const LobbyScreen: React.FC = () => {
         );
       }
 
-      // if (game.num_players === game.players.length) {
-      //   return (
-      //     <p className="font-thin text-sm">Waiting for host to start...</p>
-      //   );
-      // }
       return <p className="font-thin text-sm">Waiting for other players...</p>;
     }
   };
@@ -328,10 +300,7 @@ const LobbyScreen: React.FC = () => {
             <div className="space-y-1">
               <p>
                 Game code:{" "}
-                <span className="font-bold">
-                  {/* {game["game_code"].toUpperCase()} */}
-                  {gameCode.toUpperCase()}
-                </span>
+                <span className="font-bold">{gameCode.toUpperCase()}</span>
               </p>
               <p className="text-[12px]">
                 You {isHost ? "are hosting" : "joined"} the game

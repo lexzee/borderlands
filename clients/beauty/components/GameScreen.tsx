@@ -4,21 +4,7 @@ import { check_ready, games, get_game, round_entry } from "@/utils/actions";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Toast } from "./ui/popup";
-
-interface Player {
-  player_id_in_game: number;
-  name: string;
-  status: string;
-  score: number;
-}
-
-interface Game {
-  game_code: string;
-  num_players: number;
-  status: string;
-  players: Player[];
-  round_data: [];
-}
+import { Game } from "@/context/GameContext";
 
 interface GameProp extends React.InputHTMLAttributes<HTMLInputElement> {}
 
