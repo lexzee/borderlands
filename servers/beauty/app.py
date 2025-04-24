@@ -3,8 +3,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 from flask_socketio import SocketIO, emit, join_room
-# from bson.objectid import ObjectId
-# from datetime import date
 import string, random
 import os
 from dotenv import load_dotenv
@@ -31,6 +29,12 @@ mongo = PyMongo(app)
 mongo.db.games.create_index("game_code", unique = True)
 #####################################
 
+# Keep server active
+@app.route("/ping")
+def ping():
+    return "pong", 200
+
+# Test Connection
 @app.route('/test_connection')
 def test_connection():
     try:
@@ -54,24 +58,45 @@ def _():
 def init_game():
   data = request.get_json()
 
-  if not data or "num_players" not in data:
-    return jsonify({"error": "Number of players is required"}), 400
+  num_players = data.get("num_players")
+  player_name = data.get("player_name")
 
-  if int(data["num_players"]) < 1:
+  if not num_players:
+    return jsonify({"error": "Number of players is required"}), 400
+  if int(num_players) < 1:
     return jsonify({"error": "Number of players should be more than 1"}), 400
+  if not player_name:
+    return jsonify({"error": "Player name is required"}), 400
 
   while True:
     try:
       game_code = generate_short_code()
+
+      host_player = {
+        "player_id_in_game": 1,
+        "name": player_name,
+        "status": "joined",
+        "score": 0
+      }
+
       game = {
         "game_code": game_code,
         "num_players": int(data["num_players"]),
         "status": "waiting",
-        "players": [],
+        "players": [host_player],
         "round_data": []
       }
 
       mongo.db.games.insert_one(game)
+
+      socketio.emit("player_joined", {
+         "player_id_in_game": 1,
+        "name": player_name,
+        "status": host_player["status"],
+        "score": host_player["score"],
+        "game_code": game_code
+      }, room = game_code.lower())
+
       break
     except Exception as e:
       if "E11000" in str(e):
@@ -133,7 +158,6 @@ def player_connect(game_code):
     "name": player_name,
     "status": new_player["status"],
     "score": new_player["score"],
-    "game_code": game_code
   }), 201
 
 
@@ -365,7 +389,7 @@ def handle_join_room(data):
 
 # Start flask server
 if __name__ == "__main__":
- socketio.run(app) ## flask --app index run --debug --host=0.0.0.0
+ socketio.run(app, debug=True) ## flask --app index run --debug --host=0.0.0.0
 
 
 
